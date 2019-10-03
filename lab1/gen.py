@@ -19,10 +19,10 @@ parser.add_argument('-t', '--type',
 parser.add_argument('--timeit',
                     action='store_true',
                     help='print execution time')
-group1 = parser.add_argument_group('numbers', 'parameters only for numbers')
+group1 = parser.add_argument_group('floats', 'parameters only for float numbers')
 group1.add_argument('-d', '--distribution',
                     choices=['uniform', 'normal'],
-                    help='distribution type (default: normal)')
+                    help='distribution type')
 group1.add_argument('--mean', type=float,
                     help='normal distribution mean (any value)')
 group1.add_argument('--std', type=float,
@@ -41,9 +41,10 @@ group2.add_argument('-c', '--charset',
 parser.add_argument('-f', '--filename', type=str,
                     default='', 
                     help='output file name (default: output to console)')
-start = time.clock()
+
+start = time.process_time()
 args = parser.parse_args()
-end = time.clock()
+end = time.process_time()
 read = end - start
 
 random.seed(a=args.seed)
@@ -51,35 +52,43 @@ random.seed(a=args.seed)
 if args.filename != '':
     sys.stdout = open(args.filename, 'w')
 
-# value checks
+if args.type == 'float':
+    if args.distribution == None:
+        sys.exit("GEN: error: distribution must be specified")
+    if args.distribution == 'uniform':
+        if args.min_value == None or args.max_value == None:
+            sys.exit("GEN: error: min value and max value must be specified")
+        if args.max_value < args.min_value:
+            sys.exit("GEN: error: max value must be greater or equal to min_value")
+    if args.distribution == 'normal':
+        if args.mean == None or args.std == None:
+            sys.exit("GEN: error: mean value and standard deviation must be specified")
+        if args.std <= 0:
+            sys.exit('GEN: error: std must be greater than zero')
 
 def main():
     if args.type == 'str':
         calc = timeit.timeit(gen_str, number=1)
     elif args.type == 'int':
-        calc = timeit.timeit(gen_str, number=1)
+        calc = timeit.timeit(gen_int, number=1)
     elif args.type == 'float':
         calc = timeit.timeit(gen_float, number=1)
     
     if args.timeit:
         sys.stdout = sys.__stdout__
-        print(f'Data parse time: ${read}')
-        print(f'Algorithm execution time: ${calc}')
+        print(f'Data parse time: {read} seconds')
+        print(f'Algorithm execution time: {calc} seconds')
     
     sys.stdout.close()
     return
         
-
-
 def gen_str():
     for _ in range(args.data_num):
         print(''.join(random.choice(args.charset) for i in range(args.length)))
-    return
 
 def gen_int():
     for _ in range(args.data_num):
         print(random.randint(-sys.maxsize - 1,sys.maxsize))
-    return
 
 def gen_float():
     if args.distribution == 'uniform':
@@ -88,6 +97,5 @@ def gen_float():
     else:
         for _ in range(args.data_num):
             print(random.normalvariate(args.mean, args.std))
-    return
 
 main()
