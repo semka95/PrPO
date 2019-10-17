@@ -36,21 +36,21 @@ class TestGenStr(unittest.TestCase):
         """
         Test if charset affects output
         """
-        data_num = 10
-        charset1 = "abcd"
-        charset2 = "efgh"
+        random.seed(2)
+        data_num = 100
+        charset = string.ascii_letters
         length = 5
 
-        got1 = gen_str(data_num, charset1, length)
-        got2 = gen_str(data_num, charset2, length)
+        got = gen_str(data_num, charset, length)
 
-        self.assertNotIn(got1, charset2)
-        self.assertNotIn(got2, charset1)
+        for i in charset:
+            self.assertIn(i, got)
 
     def test_random_str(self):
         """
         Test if generated strings are random
         """
+        random.seed(0)
         data_num = 10
         charset = string.ascii_letters
         length = 5
@@ -58,6 +58,23 @@ class TestGenStr(unittest.TestCase):
         got = [gen_str(data_num, charset, length) for _ in range(1000)]
 
         self.assertTrue(len(set(got)) == len(got))
+
+    def test_seed_str(self):
+        """
+        Test if seed change affects output
+        """
+        data_num = 10
+        charset = string.ascii_letters
+        length = 5
+
+        random.seed(1)
+        got1 = gen_str(data_num, charset, length)
+        random.seed(2)
+        got2 = gen_str(data_num, charset, length)
+        random.seed(1)
+        got3 = gen_str(data_num, charset, length)
+
+        self.assertTrue(got1 == got3 and got1 != got2)
 
 
 class TestGenInt(unittest.TestCase):
@@ -76,11 +93,27 @@ class TestGenInt(unittest.TestCase):
         """
         Test if generated integers are random
         """
+        random.seed(0)
         data_num = 10
 
         got = [gen_int(data_num) for _ in range(1000)]
 
         self.assertTrue(len(set(got)) == len(got))
+
+    def test_seed_int(self):
+        """
+        Test if seed change affects output
+        """
+        data_num = 10
+
+        random.seed(1)
+        got1 = gen_int(data_num)
+        random.seed(2)
+        got2 = gen_int(data_num)
+        random.seed(1)
+        got3 = gen_int(data_num)
+
+        self.assertTrue(got1 == got3 and got1 != got2)
 
 
 class TestGenFloat(unittest.TestCase):
@@ -102,6 +135,7 @@ class TestGenFloat(unittest.TestCase):
         """
         Test if generated floats are random
         """
+        random.seed(0)
         data_num = 10
         distribution = 'uniform'
         min_value = 0
@@ -112,12 +146,30 @@ class TestGenFloat(unittest.TestCase):
 
         self.assertTrue(len(set(got)) == len(got))
 
+    def test_seed_float(self):
+        """
+        Test if seed change affects output
+        """
+        random.seed(1)
+        data_num = 10
+        distribution = 'uniform'
+        min_value = 0
+        max_value = 1
+
+        got1 = gen_float(data_num, distribution, min_value, max_value, 0, 0)
+        random.seed(2)
+        got2 = gen_float(data_num, distribution, min_value, max_value, 0, 0)
+        random.seed(1)
+        got3 = gen_float(data_num, distribution, min_value, max_value, 0, 0)
+
+        self.assertTrue(got1 == got3 and got1 != got2)
+
     def test_uniform(self):
         """
         Test uniform distribution
-        Value N should be a <= N <= b for a <= b and b <= N <= a for b < a
+        Value N should be [a; b]
         """
-        data_num = 100
+        data_num = 10000
         distribution = 'uniform'
         a = 0
         b = 1
@@ -128,7 +180,7 @@ class TestGenFloat(unittest.TestCase):
 
         flag = False
         for i in float_arr:
-            if i < a and i > b and a <= b:
+            if i < a or i > b:
                 flag = True
 
         self.assertFalse(flag)
@@ -136,23 +188,24 @@ class TestGenFloat(unittest.TestCase):
     def test_normal(self):
         """
         Test normal distribution
-        Value should be (x-3σ;x+3σ)
+        Value should be (x-3σ; x+3σ) - three-sigma rule (99.7%)
         """
-        data_num = 10
+        random.seed(0)
+        data_num = 100000
         distribution = 'normal'
         mean = 5
-        std = 1
+        std = 0.5
 
         got = gen_float(data_num, distribution, 0, 0, mean, std).split('\n')
         del got[-1]
         float_arr = [float(x) for x in got]
 
-        flag = False
+        counter = 0
         for i in float_arr:
-            if i < mean-3*std and i > mean+3*std:
-                flag = True
+            if i < mean-3*std or i > mean+3*std:
+                counter += 1
 
-        self.assertFalse(flag)
+        self.assertTrue(counter <= data_num * 0.3 / 100)
 
 
 if __name__ == "__main__":
