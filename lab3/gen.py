@@ -1,12 +1,39 @@
+"""Random string/number generator
+
+This script allows the user to generate random strings or numbers
+(each on a new line) and write it to the file. User can specify
+seed, type of generated data and output execution time.
+
+For strings user can specify length of the strings, and character set.
+
+For float numbers user can specify distribution - uniform or normal, and
+parameters of distribution - min and max value for uniform, mean and
+standard deviation for normal distribution.
+
+This file can also be imported as a module and contains the following
+functions:
+
+    * argparser - returns parsed arguments and data read time
+    * gen_str - returns random generated strings
+    * gen_int - returns random generated integers
+    * gen_float - returns random generated floats
+    * main - the main function of the script
+"""
 import argparse
 import string
 import random
 import sys
 import time
-from typing import Union
 
 
-def argparser() -> Union[dict, float]:
+def argparser() -> dict:
+    """Parses command-line options and arguments and returns them as a dictioanary
+
+    Returns
+    -------
+    dict
+        a dict of parsed command-line arguments and options
+    """
     parser = argparse.ArgumentParser(
         description='Generate some random strings or integers.', prog='GEN', usage='%(prog)s [options]')
     parser.add_argument('data_num', type=int,
@@ -46,10 +73,7 @@ def argparser() -> Union[dict, float]:
                         default='',
                         help='output file name (default: output to console)')
 
-    start = time.process_time()
     args = parser.parse_args()
-    end = time.process_time()
-    read = end - start
 
     if args.type == 'float':
         if args.distribution == None:
@@ -66,21 +90,89 @@ def argparser() -> Union[dict, float]:
                     "GEN: error: mean value and standard deviation must be specified")
             if args.std <= 0:
                 sys.exit('GEN: error: std must be greater than zero')
-    return args, read
+    return args
 
 
-def main() -> None:
-    args, read = argparser()
+def gen_str(data_num: int, charset: str, length: int) -> str:
+    """Returns random generated strings
+
+    Parameters
+    ----------
+    data_num : int
+        The number of strings to generate
+    charset : str
+        Acceptable character set
+    length : int
+        Length of the generated strings
+
+    Returns
+    -------
+    str
+        a string of randomly generated strings
+    """
+    res = ''
+    for _ in range(data_num):
+        res += ''.join(random.choice(charset) for i in range(length)) + '\n'
+    return res
+
+
+def gen_int(data_num: int) -> str:
+    """Returns random generated integer numbers
+
+    Parameters
+    ----------
+    data_num : int
+        The number of integer numbers to generate
+
+    Returns
+    -------
+    str
+        a string of randomly generated integer numbers
+    """
+    res = ''
+    for _ in range(data_num):
+        res += f'{random.randint(-sys.maxsize - 1, sys.maxsize)}\n'
+    return res
+
+
+def gen_float(data_num: int, distribution: str, min_value: float, max_value: float, mean: float, std: float) -> str:
+    """Returns random generated float numbers
+
+    Parameters
+    ----------
+    data_num : int
+        The number of float numbers to generate
+    distribution : str
+        Distribution type (uniform or normal)
+    min_value : float
+        Uniform distribution min value
+    max_value : float
+        Uniform distribution max value
+    mean : float
+        normal distribution mean
+    std : float
+        Normal distribution standard deviation
+
+    Returns
+    -------
+    str
+        a string of randomly generated float numbers
+    """
+    res = ''
+    if distribution == 'uniform':
+        for _ in range(data_num):
+            res += f'{random.uniform(min_value, max_value)}\n'
+    else:
+        for _ in range(data_num):
+            res += f'{random.normalvariate(mean, std)}\n'
+    return res
+
+
+def main():
+    args = argparser()
     random.seed(a=args.seed)
-    alg = calc(args)
 
-    if args.timeit:
-        print(f'Data parse time: {read} seconds')
-        print(f'Algorithm execution time: {alg} seconds')
-    return
-
-
-def calc(args: dict) -> float:
+    alg = 0.0
     if args.type == 'str':
         start = time.process_time()
         result = gen_str(args.data_num, args.charset, args.length)
@@ -102,34 +194,10 @@ def calc(args: dict) -> float:
         with open(args.filename, "w") as f:
             f.write(result)
     else:
-        print(result)
+        print(f'Generated data:\n{result}')
 
-    return alg
-
-
-def gen_str(data_num: int, charset: str, length: int) -> str:
-    res = ''
-    for _ in range(data_num):
-        res += ''.join(random.choice(charset) for i in range(length)) + '\n'
-    return res
-
-
-def gen_int(data_num: int) -> str:
-    res = ''
-    for _ in range(data_num):
-        res += f'{random.randint(-sys.maxsize - 1, sys.maxsize)}\n'
-    return res
-
-
-def gen_float(data_num: int, distribution: str, min_value: float, max_value: float, mean: float, std: float) -> str:
-    res = ''
-    if distribution == 'uniform':
-        for _ in range(data_num):
-            res += f'{random.uniform(min_value, max_value)}\n'
-    else:
-        for _ in range(data_num):
-            res += f'{random.normalvariate(mean, std)}\n'
-    return res
+    if args.timeit:
+        print(f'Algorithm execution time: {alg} seconds')
 
 
 if __name__ == "__main__":
